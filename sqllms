@@ -13,7 +13,7 @@ GO
 	);
 
 	CREATE TABLE tbl_book (
-		book_BookID INT PRIMARY KEY NOT NULL IDENTITY (1,1),
+		book_ISBN INT PRIMARY KEY NOT NULL IDENTITY (1,1),
 		book_Title VARCHAR(100) NOT NULL,
 		book_PublisherName VARCHAR(100) NOT NULL CONSTRAINT fk_publisher_name1 FOREIGN KEY REFERENCES tbl_publisher(publisher_PublisherName) ON UPDATE CASCADE ON DELETE CASCADE,
 	);
@@ -37,7 +37,7 @@ GO
 
 	CREATE TABLE tbl_book_loans (
 		book_loans_LoansID INT PRIMARY KEY NOT NULL IDENTITY (1,1),
-		book_loans_BookID INT NOT NULL CONSTRAINT fk_book_id1 FOREIGN KEY REFERENCES tbl_book(book_BookID) ON UPDATE CASCADE ON DELETE CASCADE,
+		book_loans_ISBN INT NOT NULL CONSTRAINT fk_book_id1 FOREIGN KEY REFERENCES tbl_book(book_ISBN) ON UPDATE CASCADE ON DELETE CASCADE,
 		book_loans_BranchID INT NOT NULL CONSTRAINT fk_branch_id1 FOREIGN KEY REFERENCES tbl_library_branch(library_branch_BranchID) ON UPDATE CASCADE ON DELETE CASCADE,
 		book_loans_CardNo INT NOT NULL CONSTRAINT fk_cardno FOREIGN KEY REFERENCES tbl_borrower(borrower_CardNo) ON UPDATE CASCADE ON DELETE CASCADE,
 		book_loans_DateOut VARCHAR(50) NOT NULL,
@@ -49,7 +49,7 @@ GO
 	 
 	CREATE TABLE tbl_book_copies (
 		book_copies_CopiesID INT PRIMARY KEY NOT NULL IDENTITY (1,1),
-		book_copies_BookID INT NOT NULL CONSTRAINT fk_book_id2 FOREIGN KEY REFERENCES tbl_book(book_BookID) ON UPDATE CASCADE ON DELETE CASCADE,
+		book_copies_ISBN INT NOT NULL CONSTRAINT fk_book_id2 FOREIGN KEY REFERENCES tbl_book(book_ISBN) ON UPDATE CASCADE ON DELETE CASCADE,
 		book_copies_BranchID INT NOT NULL CONSTRAINT fk_branch_id2 FOREIGN KEY REFERENCES tbl_library_branch(library_branch_BranchID) ON UPDATE CASCADE ON DELETE CASCADE,
 		book_copies_No_Of_Copies INT NOT NULL,
 	);
@@ -58,7 +58,7 @@ GO
 
 	CREATE TABLE tbl_book_authors (
 		book_authors_AuthorID INT PRIMARY KEY NOT NULL IDENTITY (1,1),
-		book_authors_BookID INT NOT NULL CONSTRAINT fk_book_id3 FOREIGN KEY REFERENCES tbl_book(book_BookID) ON UPDATE CASCADE ON DELETE CASCADE,
+		book_authors_ISBN INT NOT NULL CONSTRAINT fk_book_id3 FOREIGN KEY REFERENCES tbl_book(book_ISBN) ON UPDATE CASCADE ON DELETE CASCADE,
 		book_authors_AuthorName VARCHAR(50) NOT NULL,
 	);
 
@@ -147,7 +147,7 @@ GO
 	SELECT * FROM tbl_borrower
 
 	INSERT INTO tbl_book_loans
-		(book_loans_BookID, book_loans_BranchID, book_loans_CardNo, book_loans_DateOut, book_loans_DueDate)
+		(book_loans_ISBN, book_loans_BranchID, book_loans_CardNo, book_loans_DateOut, book_loans_DueDate)
 		VALUES
 		('1','1','100','1/1/18','2/2/18'),
 		('2','1','100','1/1/18','2/2/18'),
@@ -205,7 +205,7 @@ GO
 	SELECT * FROM tbl_book_loans
 
 	INSERT INTO tbl_book_copies
-		(book_copies_BookID, book_copies_BranchID, book_copies_No_Of_Copies)
+		(book_copies_ISBN, book_copies_BranchID, book_copies_No_Of_Copies)
 		VALUES
 		('1','1','5'),
 		('2','1','5'),
@@ -292,7 +292,7 @@ GO
  
 
 	INSERT INTO tbl_book_authors
-		(book_authors_BookID,book_authors_AuthorName)
+		(book_authors_ISBN,book_authors_AuthorName)
 		VALUES
 		('1','Patrick Rothfuss'),
 		('2','Stephen King'),
@@ -330,7 +330,7 @@ SELECT copies.book_copies_BranchID AS [Branch ID], branch.library_branch_BranchN
 	   copies.book_copies_No_Of_Copies AS [Number of Copies],
 	   book.book_Title AS [Book Title]
 	   FROM tbl_book_copies AS copies
-			INNER JOIN tbl_book AS book ON copies.book_copies_BookID = book.book_BookID
+			INNER JOIN tbl_book AS book ON copies.book_copies_ISBN = book.book_ISBN
 			INNER JOIN tbl_library_branch AS branch ON book_copies_BranchID = branch.library_branch_BranchID
 	   WHERE book.book_Title = @bookTitle AND branch.library_branch_BranchName = @branchName
 GO
@@ -346,7 +346,7 @@ SELECT copies.book_copies_BranchID AS [Branch ID], branch.library_branch_BranchN
 	   copies.book_copies_No_Of_Copies AS [Number of Copies],
 	   book.book_Title AS [Book Title]
 	   FROM tbl_book_copies AS copies
-			INNER JOIN tbl_book AS book ON copies.book_copies_BookID = book.book_BookID
+			INNER JOIN tbl_book AS book ON copies.book_copies_ISBN = book.book_ISBN
 			INNER JOIN tbl_library_branch AS branch ON book_copies_BranchID = branch.library_branch_BranchID
 	   WHERE book.book_Title = @bookTitle 
 GO
@@ -374,7 +374,7 @@ SELECT Branch.library_branch_BranchName AS [Branch Name],  Book.book_Title [Book
 	   Borrower.borrower_BorrowerName AS [Borrower Name], Borrower.borrower_BorrowerAddress AS [Borrower Address],
 	   Loans.book_loans_DateOut AS [Date Out], Loans.book_loans_DueDate [Due Date]
 	   FROM tbl_book_loans AS Loans
-			INNER JOIN tbl_book AS Book ON Loans.book_loans_BookID = Book.book_BookID
+			INNER JOIN tbl_book AS Book ON Loans.book_loans_ISBN = Book.book_ISBN
 			INNER JOIN tbl_borrower AS Borrower ON Loans.book_loans_CardNo = Borrower.borrower_CardNo
 			INNER JOIN tbl_library_branch AS Branch ON Loans.book_loans_BranchID = Branch.library_branch_BranchID
 		WHERE Loans.book_loans_DueDate = @DueDate AND Branch.library_branch_BranchName = @LibraryBranchName
@@ -415,11 +415,12 @@ CREATE PROC dbo.BookbyAuthorandBranch
 AS
 	SELECT Branch.library_branch_BranchName AS [Branch Name], Book.book_Title AS [Title], Copies.book_copies_No_Of_Copies AS [Number of Copies]
 		   FROM tbl_book_authors AS Authors
-				INNER JOIN tbl_book AS Book ON Authors.book_authors_BookID = Book.book_BookID
-				INNER JOIN tbl_book_copies AS Copies ON Authors.book_authors_BookID = Copies.book_copies_BookID
+				INNER JOIN tbl_book AS Book ON Authors.book_authors_ISBN = Book.book_ISBN
+				INNER JOIN tbl_book_copies AS Copies ON Authors.book_authors_ISBN = Copies.book_copies_ISBN
 				INNER JOIN tbl_library_branch AS Branch ON Copies.book_copies_BranchID = Branch.library_branch_BranchID
 			WHERE Branch.library_branch_BranchName = @BranchName AND Authors.book_authors_AuthorName = @AuthorName
 GO	
 EXEC dbo.BookbyAuthorandBranch
 
 /* ==================================== STORED PROCEDURE QUERY QUESTIONS =================================== */
+
